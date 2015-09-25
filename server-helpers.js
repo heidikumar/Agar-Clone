@@ -9,22 +9,36 @@ exports.sendUsers = function(){
 };
 
 exports.sendFriends = function(username){
-  var friendsArray;
-  //first find id for user
-  db.User.findOne({where: {'username' : username}}).then(function(user){
-    userID = user.id;
+  var friendsIDArray = [];
+  var friendsNameArray = [];
 
-    db.Friends.findAll({where: {key: user.id}}).then(function(friendsArr){
+  //I am trying to use Sequelize's then chaining to handle asynch.
+  //Not sure if I can do that, but if not we can require bluebird.
+  //Didn't jump into bluebird because then all "then" statments change which lib they use.
+
+  //ALSO NEED TO ADD ERROR HANDLING!
+
+  db.Friendship.findAll({where: {user1: user.id}}).then(function(friendIDs){
+    for (var i=0; i<friendsArr.length; i++){
+      friendsIDArray.push(friendIDs[i].user2);
+    };
+
+    db.Friendship.findAll({where: {user2: user.id}}).then(function(friendsArr){
       for (var i=0; i<friendsArr.length; i++){
-        friendsArray.push(friendsArr[i].user2.key);
+        friendsIDArray.push(friendIDs[i].user1);
       };
-    });
+    }).then(
+      //translating all the user ids to names
+      for (var i=0; i<friendsIDArray.length; i++){
+        db.User.findOne({where: {id: friendsIDArray[i]}}).then(function(user){
+          friendsNameArray.push(user.username);
+        });
+      };
+    ).then(
+      return friendsNameArray;
+    )
   });
-  //use id to search for user in Friends database
-    //give us friends User ids
-
-  //go back to User and search Friends' ids to get usernames
-}
+};
 
 exports.sendDeath = function(finalStats){
 
@@ -39,9 +53,27 @@ exports.sendDeath = function(finalStats){
     currentStats.totalKills += finalStats.totalKills;
     currentStats.totalFood += finalStats.totalFood;
     currentStats.timeInFirst += finalStats.timeInFirst;
+  });
 
-    //still needs to handle "bestScore table"
-
+  db.bestStats.findOne({where: {key:user.id}}).then(function(bestStats){
+    if (finalStats.lifetime > bestStats.lifetime){
+      bestStats.lifetime += finalStats.lifetime;
+    }
+    if (finalStats.score > bestStats.score){
+      bestStats.score += finalStats.score;
+    }
+    if (finalStats.mass > bestStats.mass){
+      bestStats.mass += finalStats.mass;
+    }
+    if (finalStats.totalKills > bestStats.totalKills){
+      bestStats.totalKills += finalStats.totalKills;
+    }
+    if (finalStats.totalFood > bestStats.totalFood){
+      bestStats.totalFood += finalStats.totalFood;
+    }
+    if (finalStats.timeInFirst > bestStats.timeInFirst){
+      bestStats.timeInFirst += finalStats.timeInFirst;
+    }
   });
 
   //for now I haven't set this to send something back to the client.
